@@ -1,50 +1,51 @@
 #!/usr/bin/env python3
+from html import entities
 from numpy import isin
 import tcod
 
 from actions import EscapeAction, MovementAction
 from input_handlers import EventHandler
+from entity import Entity
+from engine import Engine
+from game_map import GameMap
 
 
 def main() -> None:
 
+    print("Hiya")
+
     screen_width = 80
     screen_height = 50
 
-    player_x = int(screen_width / 2)
-    player_y = int(screen_height / 2)
+    game_map = GameMap(width=80, height=50)
 
-    tileset = tcod.tileset.load_tilesheet(".\\resources\\tileset.png", 32, 8, tcod.tileset.CHARMAP_TCOD)
+    player = Entity(int(screen_width / 2), int(screen_height / 2), "@", [255, 255, 255])
+    npc = Entity(int(screen_width / 2 - 10), int(screen_height / 2 - 10), "N", [255, 255, 0])
+
+    entities = {player, npc}
 
     event_handler = EventHandler()
 
+    engine = Engine(entities=entities, event_handler=event_handler, player=player, game_map=game_map)
+
+    tileset = tcod.tileset.load_tilesheet(".\\resources\\tileset.png", 32, 8, tcod.tileset.CHARMAP_TCOD)
+
+    
+
     with tcod.context.new_terminal(
-        screen_width,
-        screen_height,
+        game_map.width,
+        game_map.height,
         tileset=tileset,
         title = "New Roguelike",
         vsync=True,
     ) as context:
         root_console = tcod.Console(screen_width, screen_height, order="F")
         while True:
-            root_console.print(x=player_x, y=player_y, string="@")
 
-            #updates the screen
-            context.present(root_console) 
+            engine.render(root_console, context)
 
-            root_console.clear()
-
-            for event in tcod.event.wait():
-                action = event_handler.dispatch(event)
-
-                if action is None:
-                    continue
-                elif isinstance(action, MovementAction):
-                    player_x += action.dx
-                    player_y += action.dy
-
-                elif isinstance(action, EscapeAction):
-                    raise SystemExit()
+            events = tcod.event.wait()
+            engine.handle_events(events)
 
 
     
