@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-from html import entities
+import copy
 from numpy import isin
 import tcod
 
 from actions import EscapeAction, MovementAction
 from input_handlers import EventHandler
-from entity import Entity
+import entity_factories
 from engine import Engine
 from procgen import generate_dungeon
 
@@ -21,17 +21,17 @@ def main() -> None:
     room_min_size = 6
     max_rooms = 30
 
-    player = Entity(int(screen_width / 2), int(screen_height / 2), "@", [255, 255, 255])
-    npc = Entity(int(screen_width / 2 - 10), int(screen_height / 2 - 10), "N", [255, 255, 0])
+    max_monsters_per_room = 2
 
+    player = copy.deepcopy(entity_factories.player)
+    
     game_map = generate_dungeon(max_rooms=max_rooms, room_max_size=room_max_size,
-    room_min_size=room_min_size, map_width=80, map_height=50, player=player)
-
-    entities = {player, npc}
+    room_min_size=room_min_size, map_width=80, map_height=50, player=player,
+    max_monsters_per_room= max_monsters_per_room)
 
     event_handler = EventHandler()
 
-    engine = Engine(entities=entities, event_handler=event_handler, player=player, game_map=game_map)
+    engine = Engine(event_handler=event_handler, player=player, game_map=game_map)
 
     tileset = tcod.tileset.load_tilesheet(".\\resources\\tileset.png", 32, 8, tcod.tileset.CHARMAP_TCOD)
 

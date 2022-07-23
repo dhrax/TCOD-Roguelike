@@ -1,4 +1,5 @@
 from __future__ import annotations
+from html import entities
 import random
 from typing import Iterator, List, Tuple, TYPE_CHECKING
 
@@ -9,6 +10,8 @@ import tile_types
 
 if TYPE_CHECKING:
     from entity import Entity
+
+import entity_factories
 
 class RectangularRoom:
     def __init__(self, x: int, y: int, width: int, height: int):
@@ -46,10 +49,11 @@ def generate_dungeon(
     room_max_size: int,
     map_width: int,
     map_height: int,
+    max_monsters_per_room: int,
     player: Entity,
 ) -> GameMap:
     """Generate a new dungeon map."""
-    dungeon = GameMap(map_width, map_height)
+    dungeon = GameMap(map_width, map_height, entities=[player])
 
     rooms: List[RectangularRoom] = []
 
@@ -68,6 +72,8 @@ def generate_dungeon(
         if any(new_room.intersects(other_room) for other_room in rooms):
             continue  # This room intersects, so go to the next attempt.
         # If there are no intersections then the room is valid.
+
+        place_entities(room=new_room, dungeon=dungeon, max_monsters=max_monsters_per_room)
 
         #set the rooms to be walkable
         dungeon.tiles[new_room.inner] = tile_types.floor
@@ -105,3 +111,17 @@ def tunnel_between(
         yield x, y
     for x, y in tcod.los.bresenham((corner_x, corner_y), (x2, y2)).tolist():
         yield x, y
+
+
+def place_entities(room: RectangularRoom, dungeon: GameMap, max_monsters: int) -> None:
+    number_of_monsters = random.randint(0, max_monsters)
+
+    for i in range(number_of_monsters):
+        x = random.randint(room.x1 + 1, room.x2 - 1)
+        y = random.randint(room.y1 + 1, room.y2 - 1)
+
+        if not any(entity.x == x and entity.y == y for entity in dungeon.entities):
+            if random.random() < 0.8:
+                entity_factories.orc.spawn(dungeon, x, y)
+            else:
+                entity_factories.troll.spawn(dungeon, x, y)
